@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>LUCH AI // QUANTUM CORE TERMINAL</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- ThreeJS & OrbitControls для математической 3D визуализации (CDN) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+/* ============================================================
+   БАЗА ТЕРМИНАЛА
+   ============================================================ */
+:root {
+  --bg-deep: #0d1a0d;           
+  --bg-panel: #142614;
+  --bg-card: #1a301a;
+  --bg-input: #0f1f0f;
+  --neon-purple: #2ecc71;       
+  --neon-violet: #48c9b0;       
+  --neon-pink: #f1c40f;         
+  --text-primary: #d5f0d5;
+  --text-secondary: #8fc98f;
+  --text-bright: #f0fff0;
+  --text-dim: #5f8a5f;
+  --border-subtle: rgba(46, 204, 113, 0.25);
+  --border-glow-purple: rgba(46, 204, 113, 0.40);
+  --border-glow-violet: rgba(72, 201, 176, 0.40);
+  --border-glow-pink: rgba(241, 196, 15, 0.45);
+  --glass-bg: rgba(13, 26, 13, 0.80);
+  --shadow-glow-purple: 0 4px 30px rgba(46, 204, 113, 0.20);
+  --shadow-glow-violet: 0 4px 30px rgba(72, 201, 176, 0.20);
+  --shadow-glow-pink: 0 4px 30px rgba(241, 196, 15, 0.25);
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  --font-display: 'Orbitron', 'JetBrains Mono', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
+
+body {
+  height: 100dvh; display: flex; flex-direction: column; font-family: var(--font-mono); background: var(--bg-deep);
+  color: var(--text-primary); overflow: hidden; user-select: none; letter-spacing: 0.02em;
+}
+
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse at 30% 20%, rgba(46, 204, 113, 0.08) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 80%, rgba(72, 201, 176, 0.05) 0%, transparent 50%);
+}
+
+.header {
+  position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px; background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle); flex-shrink: 0; box-shadow: 0 2px 32px rgba(0, 0, 0, 0.4);
+}
+
+.header-brand { display: flex; align-items: center; gap: 12px; font-family: var(--font-display); font-size: 0.85rem; font-weight: 600; letter-spacing: 0.08em; color: var(--text-bright); text-shadow: 0 0 20px rgba(46, 204, 113, 0.3); }
+.logo-icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; font-size: 1.1rem; background: rgba(46, 204, 113, 0.15); border: 1px solid rgba(46, 204, 113, 0.35); border-radius: 12px; box-shadow: 0 0 16px rgba(46, 204, 113, 0.15); color: var(--neon-purple); }
+.header-status { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: 0.65rem; font-weight: 500; letter-spacing: 0.1em; color: var(--neon-purple); text-shadow: 0 0 16px rgba(46, 204, 113, 0.4); }
+.status-dot { display: inline-block; width: 8px; height: 8px; background: var(--neon-purple); border-radius: 50%; box-shadow: 0 0 12px var(--neon-purple); }
+
+.chat-container {
+  position: relative; z-index: 5; flex: 1; overflow-y: auto; padding: 24px 20px;
+  display: flex; flex-direction: column; gap: 16px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(46, 204, 113, 0.04) 0%, transparent 70%);
+}
+.chat-container::-webkit-scrollbar { width: 4px; }
+.chat-container::-webkit-scrollbar-track { background: transparent; }
+.chat-container::-webkit-scrollbar-thumb { background: rgba(46, 204, 113, 0.30); border-radius: 4px; }
+
+.message { max-width: 80%; padding: 14px 20px; font-size: 0.85rem; line-height: 1.6; letter-spacing: 0.02em; word-break: break-word; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border-radius: 14px; box-shadow: 0 2px 20px rgba(0, 0, 0, 0.25); }
+.message.ai { align-self: flex-start; background: var(--bg-card); border: 1px solid var(--border-glow-purple); border-left: 4px solid var(--neon-purple); color: var(--text-bright); }
+.message.user { align-self: flex-end; background: var(--bg-card); border: 1px solid var(--border-glow-violet); border-right: 4px solid var(--neon-violet); color: var(--text-bright); text-align: right; }
+.message.system { align-self: center; max-width: 90%; background: rgba(26, 48, 26, 0.6); border: 1px solid rgba(241, 196, 15, 0.2); color: var(--neon-pink); font-size: 0.75rem; text-align: center; padding: 10px 20px; font-style: italic; border-radius: 30px; }
+
+.play-audio-btn { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 18px; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.06em; color: var(--neon-purple); background: rgba(46, 204, 113, 0.10); border: 1px solid rgba(46, 204, 113, 0.35); border-radius: 30px; cursor: pointer; transition: all 0.2s ease; text-transform: uppercase; box-shadow: 0 0 8px rgba(46, 204, 113, 0.08); }
+.play-audio-btn:hover { background: rgba(46, 204, 113, 0.20); border-color: rgba(46, 204, 113, 0.65); color: var(--text-bright); box-shadow: 0 0 20px rgba(46, 204, 113, 0.20); }
+.play-audio-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.input-container {
+  position: relative; z-index: 10; display: flex; align-items: center; gap: 12px; padding: 14px 20px; background: var(--glass-bg);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--border-subtle); flex-shrink: 0;
+  box-shadow: 0 -2px 32px rgba(0, 0, 0, 0.4); padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
+}
+
+.btn { display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; border: 1px solid var(--border-subtle); border-radius: 12px; cursor: pointer; font-size: 1.1rem; background: var(--bg-card); color: var(--text-secondary); transition: all 0.15s ease; touch-action: manipulation; }
+.btn:active { transform: scale(0.94); }
+.btn-mic { border-color: rgba(46, 204, 113, 0.20); }
+.btn-mic:hover { border-color: rgba(46, 204, 113, 0.40); color: var(--text-bright); }
+.btn-mic.active { background: rgba(46, 204, 113, 0.15); border-color: var(--neon-pink); color: var(--neon-pink); box-shadow: var(--shadow-glow-pink); }
+.btn-send { background: rgba(46, 204, 113, 0.12); border-color: rgba(46, 204, 113, 0.35); color: var(--neon-purple); font-weight: 700; box-shadow: 0 0 16px rgba(46, 204, 113, 0.08); }
+.btn-send:hover { background: rgba(46, 204, 113, 0.25); border-color: rgba(46, 204, 113, 0.60); color: var(--text-bright); box-shadow: 0 0 24px rgba(46, 204, 113, 0.20); }
+
+.input-wrapper { flex: 1; display: flex; align-items: center; gap: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 0 16px; box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3); }
+.input-wrapper:focus-within { border-color: rgba(46, 204, 113, 0.50); box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 24px rgba(46, 204, 113, 0.10); }
+.input-icon { font-size: 0.85rem; color: var(--text-dim); flex-shrink: 0; }
+.input-wrapper:focus-within .input-icon { color: var(--neon-purple); }
+
+#userInput { flex: 1; background: transparent; border: none; outline: none; color: var(--text-bright); font-family: var(--font-mono); font-size: 0.85rem; padding: 14px 0; letter-spacing: 0.03em; min-width: 0; caret-color: var(--neon-purple); }
+#userInput::placeholder { color: var(--text-dim); letter-spacing: 0.04em; font-style: italic; opacity: 0.7; }
+#audioPlayer { display: none; }
+
+
+/* ============================================================
+   СТИЛИ ДЛЯ ГЛУБОКОГО ПРОЦЕДУРНОГО РЕАКТОРА QUANTUM CORE
+   ============================================================ */
+#screensaver-ui {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    /* Бездна на основе синевато-оранжевого перехода Тони Старка */
+    background: radial-gradient(circle at center, rgba(14, 5, 2, 0.96), rgba(0, 1, 3, 1) 90%);
+    z-index: 100000;
+    opacity: 0; pointer-events: none;
+    transition: opacity 1.2s cubic-bezier(0.19, 1, 0.22, 1);
+    display: flex; justify-content: center; align-items: center; overflow: hidden;
+}
+#screensaver-ui.active { opacity: 1; pointer-events: auto; }
+#three-canvas-container { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+.screensaver-vignette {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(2, 0, 4, 0.85) 125%),
+                linear-gradient(0deg, rgba(255, 120, 0, 0.02) 0%, transparent 40%, transparent 60%, rgba(0, 200, 255, 0.02) 100%);
+    z-index: 5; mix-blend-mode: multiply;
+}
+
+.exit-screensaver-btn {
+    position: absolute; bottom: max(40px, env(safe-area-inset-bottom, 40px)); padding: 12px 35px; z-index: 10;
+    background: rgba(0, 229, 255, 0.03); border: 1px solid rgba(0, 229, 255, 0.4); border-radius: 8px;
+    color: #4df8ff; font-family: var(--font-display); font-size: 0.65rem; font-weight: 700;
+    letter-spacing: 0.35em; cursor: pointer; box-shadow: 0 0 18px rgba(0, 229, 255, 0.1), inset 0 0 8px rgba(0, 229, 255, 0.15);
+    transition: all 0.3s ease; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); pointer-events: auto;
+}
+.exit-screensaver-btn:active { transform: scale(0.94); background: rgba(0, 229, 255, 0.15); box-shadow: 0 0 25px rgba(0, 229, 255, 0.5); color: #fff; border-color: #00ffff; }
+@media (hover: hover) { .exit-screensaver-btn:hover { background: rgba(0, 229, 255, 0.1); box-shadow: 0 0 35px rgba(0, 229, 255, 0.3); color: #ffffff; border-color: rgba(0, 255, 255, 0.8); } }
+
+@media (max-width: 600px) {
+  .header { padding: 10px 16px; } .header-brand { font-size: 0.75rem; gap: 8px; } .logo-icon { width: 30px; height: 30px; font-size: 1rem; border-radius: 10px; }
+  .chat-container { padding: 16px 12px; gap: 12px; } .message { max-width: 90%; font-size: 0.78rem; padding: 10px 14px; }
+  .input-container { padding: 10px 12px; gap: 8px; padding-bottom: max(10px, env(safe-area-inset-bottom, 10px)); }
+  .btn { width: 40px; height: 40px; font-size: 1rem; border-radius: 10px; } .input-wrapper { padding: 0 12px; border-radius: 10px; } #userInput { font-size: 0.8rem; padding: 12px 0; }
+  .exit-screensaver-btn { font-size: 0.55rem; padding: 10px 24px; bottom: 30px; }
+}
+@media (max-width: 380px) {
+  .header { padding: 8px 12px; } .header-brand { font-size: 0.65rem; gap: 6px; } .logo-icon { width: 26px; height: 26px; font-size: 0.85rem; }
+  .btn { width: 36px; height: 36px; font-size: 0.9rem; } .input-wrapper { padding: 0 8px; } #userInput { font-size: 0.72rem; padding: 10px 0; }
+}
+    </style>
+</head>
+<body>
+
+    <!-- Всплывающий оверлей Изумрудного Консольного Свечения -->
+    <header class="header">
+        <div class="header-brand"><span class="logo-icon">⚡</span><span><strong>LUCH</strong> // TERMINAL</span></div>
+    </header>
+    <div class="chat-container" id="chatContainer"><div class="message ai">Интегрированные системы готовы. Жду запросов.</div></div>
+    
+    <div class="input-container">
+        <button class="btn btn-mic" id="micToggle" onclick="toggleAlwaysListening()">🎙</button>
+        <div class="input-wrapper">
+            <span class="input-icon">⌨</span>
+            <input type="text" id="userInput" placeholder="Ввод команды..." autocomplete="off" onkeypress="handleKey(event)">
+        </div>
+        <button class="btn btn-send" id="sendBtn" onclick="sendMessage()">></button>
+    </div>
+
+    <audio id="audioPlayer"></audio>
+
+    <!-- UI ЭКРАННОЙ ГОЛОГРАММЫ-ЯДРА 3.0 -->
+    <div id="screensaver-ui">
+        <div id="three-canvas-container"></div>
+        <div class="screensaver-vignette"></div>
+        <button class="exit-screensaver-btn" onclick="hideScreensaver()">СВЕРНУТЬ ИНТЕРФЕЙС / АНАЛИЗ ДАННЫХ</button>
+    </div>
+
+    <script>
+        // --- 1. ОПЦИОНАЛЬНЫЙ ФУНКЦИОНАЛ КОНСОЛИ ---
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const micToggle = document.getElementById('micToggle');
+        const audioPlayer = document.getElementById('audioPlayer');
+
+        let isStreaming = false, audioContext, analyser, microphone, stream, mediaRecorder = null, audioChunks = [], silenceTimer = null;
+        let isSpeaking = false, isProcessingAI = false, isAudioPlaying = false;
+        const THRESHOLD = 8, SILENCE_TIMEOUT = 300; let lastUserMsg = null, lastAIMsg = null;
+
+        function addMessage(text, sender, extraClass = '') {
+            const msg = document.createElement('div'); msg.className = `message ${sender} ${extraClass}`; msg.innerText = text;
+            chatContainer.appendChild(msg); chatContainer.scrollTop = chatContainer.scrollHeight; return msg;
+        }
+
+        function stopAudio() {
+            if (!audioPlayer.paused) { audioPlayer.pause(); audioPlayer.currentTime = 0; isAudioPlaying = false; document.querySelectorAll('.play-audio-btn').forEach(btn => { btn.innerHTML = 'ПРОСЛУШАТЬ'; }); }
+        }
+
+        async function toggleAlwaysListening() {
+            if (!isStreaming) {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    audioContext = new(window.AudioContext || window.webkitAudioContext)();
+                    if (audioContext.state === 'suspended') await audioContext.resume();
+                    microphone = audioContext.createMediaStreamSource(stream); analyser = audioContext.createAnalyser(); analyser.fftSize = 512;
+                    microphone.connect(analyser); isStreaming = true;
+                    micToggle.classList.add('active'); micToggle.innerText = '⏺'; startVADListener();
+                } catch (err) { alert('Ошибка микрофона: ' + err.message); }
+            } else {
+                isStreaming = false; micToggle.classList.remove('active'); micToggle.innerText = '🎙'; clearTimeout(silenceTimer);
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+                if (stream) stream.getTracks().forEach(t => t.stop()); if (audioContext) audioContext.close();
+            }
+        }
+
+        function startVADListener() {
+            if (!isStreaming) return; const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            function analyze() {
+                if (!isStreaming) return; analyser.getByteFrequencyData(dataArray); let sumSquares = 0;
+                for (let i = 0; i < dataArray.length; i++) sumSquares += dataArray[i] * dataArray[i];
+                const rms = Math.sqrt(sumSquares / dataArray.length);
+                if (rms > THRESHOLD && !isProcessingAI) {
+                    if (!isSpeaking) { isSpeaking = true; startChunkRecording(); }
+                    clearTimeout(silenceTimer); silenceTimer = setTimeout(() => { if (isSpeaking) { isSpeaking = false; stopAndSendChunk(); } }, SILENCE_TIMEOUT);
+                }
+                requestAnimationFrame(analyze);
+            } analyze();
+        }
+
+        function startChunkRecording() {
+            try {
+                let options = {};
+                if (MediaRecorder.isTypeSupported('audio/webm')) options = { mimeType: 'audio/webm' }; else if (MediaRecorder.isTypeSupported('audio/mp4')) options = { mimeType: 'audio/mp4' };
+                mediaRecorder = new MediaRecorder(stream, options); audioChunks = [];
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); }; mediaRecorder.start();
+            } catch (e) {}
+        }
+
+        function stopAndSendChunk() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.onstop = async () => { if (audioChunks.length > 0) await transmitAudioToServer(new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' })); };
+                mediaRecorder.stop();
+            }
+        }
+
+        async function transmitAudioToServer(blob) {
+            if (isProcessingAI) return; isProcessingAI = true; hideScreensaver();
+            if (!lastUserMsg || lastUserMsg.className.indexOf('user') === -1) lastUserMsg = addMessage('...', 'user');
+            if (!lastAIMsg || lastAIMsg.className.indexOf('ai') === -1) lastAIMsg = addMessage('...', 'ai');
+            const formData = new FormData(); formData.append('file', blob, 's.webm');
+
+            try {
+                const res = await fetch('/api/voice', { method: 'POST', body: formData }); if (!res.ok) throw new Error('NET FAULT');
+                const data = await res.json();
+                if (data.status === 'stop_audio' || data.status === 'ignored') { if(data.status==='stop_audio') stopAudio(); lastUserMsg?.remove(); lastAIMsg?.remove(); lastUserMsg = null; lastAIMsg = null; return; }
+                lastUserMsg.innerText = '🎙 : ' + data.user_text; lastAIMsg.innerText = data.response; if (data.play_audio) appendPlayButton(lastAIMsg);
+            } catch (err) { lastAIMsg.innerText = '⚠️ ' + err.message; }
+            finally { isProcessingAI = false; lastUserMsg = null; lastAIMsg = null; }
+        }
+
+        async function appendPlayButton(msgContainer) {
+            const btn = document.createElement('button'); btn.className = 'play-audio-btn'; btn.innerHTML = 'DL...'; btn.disabled = true;
+            msgContainer.appendChild(document.createElement('br')); msgContainer.appendChild(btn); msgContainer.scrollIntoView({ block: 'nearest' });
+            try {
+                const res = await fetch('/api/audio?t=' + Date.now()); if (!res.ok) throw new Error();
+                audioPlayer.src = URL.createObjectURL(await res.blob());
+                btn.innerHTML = '🔊 ОТВЕТ'; btn.disabled = false;
+                btn.onclick = () => {
+                    if (!audioPlayer.paused) { audioPlayer.pause(); audioPlayer.currentTime = 0; isAudioPlaying = false; btn.innerHTML = '🔊 ОТВЕТ'; return; }
+                    audioPlayer.currentTime = 0; audioPlayer.play().catch(e=>0); isAudioPlaying = true; btn.innerHTML = '⏸ СТОП';
+                };
+                audioPlayer.play().then(() => { isAudioPlaying = true; btn.innerHTML = '⏸ СТОП'; }).catch(() => 0);
+                audioPlayer.onended = () => { isAudioPlaying = false; document.querySelectorAll('.play-audio-btn').forEach(b => b.innerHTML = '🔊 ОТВЕТ'); };
+            } catch (err) { btn.innerHTML = 'ERROR'; }
+        }
+
+        async function sendMessage() {
+            const text = userInput.value.trim(); if (!text) return; hideScreensaver();
+            if (text.startsWith('/')) {
+                userInput.value = ''; const sysMsg = addMessage(`SYS: ${text}`, 'system');
+                try {
+                    const res = await fetch('/api/command', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cmd: text }) });
+                    sysMsg.innerText = (await res.json()).output;
+                } catch (err) { sysMsg.innerText = 'ERR: ' + err.message; } return;
+            }
+            addMessage(text, 'user'); userInput.value = ''; isProcessingAI = true; const aiMsg = addMessage('Чтение логов...', 'ai');
+            try {
+                const res = await fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+                const data = await res.json(); aiMsg.innerText = data.response; if (data.play_audio) appendPlayButton(aiMsg);
+            } catch (err) { aiMsg.innerText = 'FAIL: ' + err.message; } finally { isProcessingAI = false; }
+        }
+        function handleKey(e) { if (e.key === 'Enter') sendMessage(); }
+
+
+        // --- 2. THE QUANTUM J.A.R.V.I.S RENDER ENGINE v3.0 (SACRED TECH) --- //
+        let idTimeT = null; const S_SLEEP_DELAY = 5000; let showCore = false;
+        let SCE, CM, RDR, CTROLS, UNI_GRP, UPDATERS = [], sysFrame = null; 
+        let engineInst = false;
+        
+        const CLRS = {
+            Cyantific: 0x00f3ff, // Научный ярко-лазурный 
+            HotGold: 0xffb700,   // Теплый сочный янтарь (Основной UI Тони)
+            BurnOrange: 0xff3800,// Техногенный плазменный кроваво-красный в основе
+            DiamondPt: 0xfffcf0 // Сияние
+        };
+
+        function invokeScreensaverOverlay() {
+            if (showCore) return; showCore = true;
+            document.getElementById('screensaver-ui').classList.add('active');
+            document.activeElement?.blur();
+            if (!engineInst) setupMasterGeometricHologram();
+            sysFrame = requestAnimationFrame(jarvisLoopProc);
+        }
+
+        function hideScreensaver() {
+            if (!showCore) return; showCore = false;
+            document.getElementById('screensaver-ui').classList.remove('active');
+            clearTimeout(idTimeT); idTimeT = setTimeout(invokeScreensaverOverlay, S_SLEEP_DELAY);
+            userInput.focus();
+            if(sysFrame) cancelAnimationFrame(sysFrame); 
+        }
+
+        function checkTouchLive() { if (!showCore) { clearTimeout(idTimeT); idTimeT = setTimeout(invokeScreensaverOverlay, S_SLEEP_DELAY); } }
+        window.addEventListener('load', () => {
+            userInput.focus();
+            ['mousemove','mousedown','keydown','scroll','touchstart','wheel'].forEach(evt => document.addEventListener(evt, checkTouchLive, {passive: true}));
+            checkTouchLive();
+        });
+
+
+        // СОЗДАЕМ ПОЛНУЮ МАГИЮ СЛОЖНЫХ, ЭСТЕТИЧНЫХ ПРОЦЕДУРНЫХ ФОРМ (Никаких плохих линий, только четкость!)
+        function setupMasterGeometricHologram() {
+            if(typeof THREE === 'undefined') return;
+            const cnvDiv = document.getElementById('three-canvas-container');
+
+            // 1. Scene & Atmosphere (Среда глубины для растворения осей по Z/Y)
+            SCE = new THREE.Scene();
+            SCE.fog = new THREE.FogExp2(0x050104, 0.018); 
+
+            CM = new THREE.PerspectiveCamera(40, window.innerWidth/window.innerHeight, 0.5, 200);
+            CM.position.z = 24; 
+
+            // 2. Additive Rendering engine for HDR looks on mobile devices
+            RDR = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+            RDR.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            RDR.setSize(window.innerWidth, window.innerHeight);
+            cnvDiv.appendChild(RDR.domElement);
+
+            // Orbit Interactor
+            CTROLS = new THREE.OrbitControls(CM, RDR.domElement);
+            CTROLS.enableDamping = true; CTROLS.dampingFactor = 0.035; CTROLS.enablePan = false;
+            CTROLS.minDistance = 6; CTROLS.maxDistance = 60;
+            window.addEventListener('resize', () => { if(CM) { CM.aspect=window.innerWidth/window.innerHeight; CM.updateProjectionMatrix(); RDR.setSize(window.innerWidth,window.innerHeight); } });
+
+            UNI_GRP = new THREE.Group(); SCE.add(UNI_GRP);
+            UPDATERS = [];
+            const OvrBld = { transparent: true, blending: THREE.AdditiveBlending, depthWrite: false };
+
+            // ----- КОМПОНЕНТ 1: QUANTUM DIAMOND CORE (Священная Геометрия: Взаимопроникающие Октаэдр, Икосаэдр и Додекаэдр) -----
+            const cHeart = new THREE.Group();
+            
+            // Внутренний сплошной циановый кристаллик, как мозг данных.
+            const bMatDia = new THREE.MeshBasicMaterial({color: CLRS.Cyantific, opacity: 0.1, ...OvrBld});
+            let coreDia = new THREE.Mesh(new THREE.OctahedronGeometry(1.0, 0), bMatDia);
+            
+            // Закованный в перекрещенный каркас Додекаэдра.
+            const wGold = new THREE.LineBasicMaterial({color: CLRS.HotGold, opacity: 0.2, ...OvrBld});
+            let cageDodeca1 = new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.DodecahedronGeometry(2.5, 0)), wGold);
+            let cageIcosa1 = new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.IcosahedronGeometry(2.8, 1)), new THREE.LineBasicMaterial({color: CLRS.DiamondPt, opacity:0.12, ...OvrBld}));
+            
+            // Коронное огненное облако вокруг платины ядра.
+            const pFGeom = new THREE.BufferGeometry();
+            const pfLgth = 700; const pfArr = new Float32Array(pfLgth*3);
+            for (let e=0; e<pfLgth; e++){
+                let rp = 1.4 + 1.2*Math.pow(Math.random(),2);
+                let xTh = 2*Math.PI*Math.random(); let yPh = Math.acos(2*Math.random()-1);
+                pfArr[e*3] = rp*Math.sin(yPh)*Math.cos(xTh); pfArr[e*3+1] = rp*Math.sin(yPh)*Math.sin(xTh); pfArr[e*3+2] = rp*Math.cos(yPh);
+            }
+            pFGeom.setAttribute('position', new THREE.BufferAttribute(pfArr, 3));
+            let coreFire = new THREE.Points(pFGeom, new THREE.PointsMaterial({color:CLRS.BurnOrange, size:0.045, ...OvrBld, opacity: 0.7}));
+
+            cHeart.add(coreDia, cageDodeca1, cageIcosa1, coreFire);
+            
+            // Закинем все гео-капсулы сердца в функцию анимации через хуки userData.
+            cageDodeca1.userData = { ry: 0.003, rx: 0.001 }; cageIcosa1.userData = { ry: -0.0015, rx: -0.002 }; coreDia.userData = { ry: -0.008 };
+            UPDATERS.push(cageDodeca1, cageIcosa1, coreDia);
+            UNI_GRP.add(cHeart);
+
+
+            // ----- КОМПОНЕНТ 2: МАГИСТРАЛЬ СКОРОСТИ ГЕКСАГОНОВ (Hex Vertical Matrix Corridors) -----
+            // Мы выстраиваем несколько длинных призрачных проволочных шестиугольников с обдувающимися концами для создания "Матрицы Баз Данных", уходящих вверх/вниз
+            for (let idxCol=1; idxCol<=3; idxCol++){
+                let radBase = 1.8 + idxCol * 0.4;
+                let c_ht = 18.0 + (idxCol * 6.0); // очень высокие цилиндры
+                // Строим с radiusSegments=6 = идеальный Хексагон! (Пчёлинная сота/Вычислительный шлейф).
+                let hCylG = new THREE.WireframeGeometry(new THREE.CylinderGeometry(radBase, radBase, c_ht, 6, 4, true));
+                // Понижаем прозрачность очень сильно (0.04), чтобы матричный эффект был тонким призраком. 
+                let mtxLn = new THREE.LineSegments(hCylG, new THREE.LineBasicMaterial({color: CLRS.Cyantific, ...OvrBld, opacity:0.025 + (Math.random()*0.02)}));
+                // Чутка повернуть вокруг центра:
+                mtxLn.rotation.y = Math.PI / idxCol; 
+                mtxLn.userData = {ry: (idxCol%2===0?-1:1)*0.002}; // Разное вращение
+                UNI_GRP.add(mtxLn);
+                UPDATERS.push(mtxLn);
+            }
+
+
+            // ----- КОМПОНЕНТ 3: ЗОНЫ РАДАРА ТЕЛЕМЕТРИИ (Рассекающие Проекционные Конусы шлема Iron Man) -----
+            const bConeMats = new THREE.LineBasicMaterial({ color: CLRS.BurnOrange, opacity: 0.04, ...OvrBld });
+            let upCone = new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.ConeGeometry(5, 7, 36, 1, true)), bConeMats);
+            let dnCone = new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.ConeGeometry(5, 7, 36, 1, true)), bConeMats);
+            upCone.position.y = -6.5; // опущены, так что острие смотрит кверху? Конструкция перевертышей.
+            dnCone.position.y = 6.5;
+            dnCone.rotation.z = Math.PI; // Свести носики друг на друга? Наоборот, базы друг к другу как рупоры!
+            upCone.userData={ry:0.002}; dnCone.userData={ry:-0.002}; 
+            UNI_GRP.add(upCone, dnCone);
+            UPDATERS.push(upCone, dnCone);
+
+
+            // ----- КОМПОНЕНТ 4: ВИРТУАЛЬНЫЕ УЗЛЫ-ИССЛЕДОВАТЕЛИ & КАРУСЕЛЬ РЕЖЕКТОРНЫХ ШКАЛ HUD -----
+            // Сгенерирует элегантные системы "Приборных Панелей Джарвиса" + орбитальные капсулы на них
+            function makeDashBand_HUD_Rings(radiSys, pXa, pYa, pZa, enableCapsules=false) {
+                const SLevel = new THREE.Group(); SLevel.rotation.set(pXa, pYa, pZa);
+                let rndLvls = 2 + Math.floor(Math.random() * 4); // число дисковых-шин связи в орбите
+                
+                for(let lv = 0; lv<rndLvls; lv++) {
+                    let dLocal = new THREE.Group();
+                    let rLvSize = radiSys + lv*(Math.random()*0.8+0.2); 
+                    
+                    let pieceDiv = 4 + Math.floor(Math.random()*16); 
+                    for (let pc=0; pc<pieceDiv; pc++){
+                        let pSliceLn = (Math.PI*2)/pieceDiv * (0.3+Math.random()*0.45); // Обрываем интерфейсные рамки на пустые пространства
+                        let rgBthk = lv % 3 === 0 ? 0.015 : (0.05 + Math.random()*0.08); // Тощина
+                        
+                        // Цвет кольца-деления
+                        let bMatCol = CLRS.HotGold; let rxr = Math.random();
+                        if (rxr>0.9) bMatCol = CLRS.DiamondPt; else if (rxr>0.75) bMatCol = CLRS.BurnOrange;
+                        else if (rxr>0.6 && rgBthk>0.05) bMatCol = CLRS.Cyantific;
+                        
+                        let M_RG = new THREE.Mesh(
+                            new THREE.RingGeometry(rLvSize, rLvSize+rgBthk, 32, 1, pc * ((Math.PI*2)/pieceDiv), pSliceLn),
+                            new THREE.MeshBasicMaterial({color:bMatCol, side:THREE.DoubleSide, ...OvrBld, opacity: 0.15 + (Math.random()*0.45)})
+                        );
+                        dLocal.add(M_RG);
+                    }
+                    dLocal.userData = {rz: (Math.random()-0.5)*0.012};
+
+                    // ---- Если это главный орбитальный экватор, повесим физические спутники-кристаллы ---- //
+                    if (enableCapsules && Math.random()>0.4) {
+                        let objGeomsType = new THREE.TetrahedronGeometry(0.2, 0); // Мелкие пирады информации. 
+                        let dataModlCnt = 2 + Math.floor(Math.random()*4); 
+                        for(let stL=0; stL < dataModlCnt; stL++){
+                            let dMeshCap = new THREE.Mesh(objGeomsType, new THREE.MeshBasicMaterial({color: CLRS.Cyantific, ...OvrBld, opacity:0.85}));
+                            let angleCaps = (Math.PI*2)/dataModlCnt * stL; 
+                            dMeshCap.position.x = rLvSize * Math.cos(angleCaps); dMeshCap.position.y = rLvSize * Math.sin(angleCaps);
+                            // Сами маленькие кусочки данных тоже будем кувыркать вокруг себя во время полета
+                            dMeshCap.userData = { isHologramNode: true, spinX: Math.random()*0.02, spinY: Math.random()*0.02 }; 
+                            dLocal.add(dMeshCap);
+                            UPDATERS.push(dMeshCap);
+                        }
+                    }
+
+                    UPDATERS.push(dLocal); SLevel.add(dLocal);
+                }
+                UNI_GRP.add(SLevel);
+            }
+            
+            // Создаем многомерные разломанные панели - одна плоская/толстая орбита с Кубами/Кристаллами Информации
+            makeDashBand_HUD_Rings(6.4, 0,0,0, true);
+            makeDashBand_HUD_Rings(5.5, Math.PI/2,0,0);
+            makeDashBand_HUD_Rings(7.1, 0, Math.PI/2.1, 0, true);
+            makeDashBand_HUD_Rings(7.8, Math.PI/6, Math.PI/3.2, 0.4);
+
+
+            // ----- КОМПОНЕНТ 5: ТОНКИЙ АСТРАЛЬНЫЙ ОКУТЫВАЮЩИЙ "ЗЕМНОЙ" ШАР -----
+            // Сфера-сетка глобус поверх всей конструкции телеметрии. Идеальная проволочная структура без полигональной серости!
+            let superSphereGeo = new THREE.WireframeGeometry(new THREE.SphereGeometry(6.6, 56, 30));
+            let netGlob = new THREE.LineSegments(superSphereGeo, new THREE.LineBasicMaterial({color: CLRS.BurnOrange, ...OvrBld, opacity:0.07}));
+            netGlob.userData = {rx: 0.0006, rz: 0.0002}; 
+            UNI_GRP.add(netGlob); UPDATERS.push(netGlob);
+
+
+            engineInst = true; 
+        }
+
+        // --- ДВИГАТЕЛЬ СЦЕНЫ, ПЕРЕМЕШИВАЮЩИЙ ГЕОМЕТРИЮ (Вращаем всё по заложенным userdata векторам)
+        function jarvisLoopProc() {
+            if (!showCore) return; 
+            sysFrame = requestAnimationFrame(jarvisLoopProc);
+            
+            // Базовый покачивающий и вечный параллакс самого ядра Вселенной! 
+            if(UNI_GRP) { 
+                UNI_GRP.rotation.y += 0.00045; 
+                UNI_GRP.rotation.z += 0.00018; 
+            }
+            
+            for(let itms = 0; itms < UPDATERS.length; itms++) {
+                let eMsh = UPDATERS[itms]; let udta = eMsh.userData;
+                // Базовые облеты компонентов. (Если есть параметры вращения в user data)
+                if(udta.rx !== undefined) eMsh.rotation.x += udta.rx;
+                if(udta.ry !== undefined) eMsh.rotation.y += udta.ry;
+                if(udta.rz !== undefined) eMsh.rotation.z += udta.rz;
+
+                // Если это наши спутники-Данные. Кувыркаем их самих, пока их контейнер DLocal кружится вокруг всей базы!
+                if(udta.isHologramNode) { eMsh.rotation.x += udta.spinX; eMsh.rotation.y += udta.spinY; }
+            }
+
+            if (CTROLS) CTROLS.update();
+            if (RDR && SCE && CM) RDR.render(SCE, CM);
+        }
+
+        // --- 3. BACKGROUND NETWORK PINGS (Для Таймеров Сервера Консоли) --- 
+        setInterval(async () => {
+            try {
+                const rqs = await fetch('/api/alerts'); if(!rqs.ok) return;
+                const payl = await rqs.json();
+                if (payl.alerts?.length > 0) {
+                    payl.alerts.forEach(async (alItem) => {
+                        let sysTbx = addMessage('💠 INCOMING DATALINK: ' + alItem.description, 'ai');
+                        sysTbx.style.borderColor = "var(--neon-pink)"; sysTbx.style.boxShadow = "var(--shadow-glow-pink)";
+                        try {
+                            const bbb = await (await fetch('/api/alert_audio?t=' + Date.now())).blob();
+                            let wpAud = new Audio(URL.createObjectURL(bbb));
+                            wpAud.play().catch(()=>{
+                                let bcBt = document.createElement('button'); bcBt.className = 'play-audio-btn';
+                                bcBt.style.color = "var(--neon-pink)"; bcBt.style.borderColor="var(--neon-pink)";
+                                bcBt.innerHTML = '🔊 ACTIVATE LINK SIGNAL'; bcBt.onclick = ()=>wpAud.play();
+                                sysTbx.appendChild(document.createElement('br')); sysTbx.appendChild(bcBt);
+                            });
+                        } catch (er) {}
+                    });
+                }
+            } catch(e) {}
+        }, 2500); 
+
+    </script>
+</body>
+</html>
